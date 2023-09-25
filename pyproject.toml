@@ -1,0 +1,35 @@
+[build-system]
+requires = [
+    "setuptools>=42",
+    "cmake>=3.12",
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "qwen-cpp"
+authors = [
+    {name = "Shijie Wang", email = "saimeng.wsj@alibaba-inc.com"},
+]
+maintainers = [
+    {name = "Shijie Wang", email = "saimeng.wsj@alibaba-inc.com"},
+]
+description = "C++ implementation of qwen & tiktoken"
+readme = "README.md"
+requires-python = ">=3.7"
+keywords = ["qwen", "tiktoken"]
+license = {text = "MIT License"}
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+]
+dynamic = ["version"]
+
+[project.urls]
+Homepage = "https://github.com/QwenLM/qwen.cpp"
+Repository = "https://github.com/QwenLM/qwen.cpp.git"
