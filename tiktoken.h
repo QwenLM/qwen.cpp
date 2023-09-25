@@ -3,6 +3,7 @@
 #include <re2/re2.h>
 #include "unordered_dense.h"
 
+#include <cassert>
 #include <limits>
 #include <optional>
 #include <regex>
