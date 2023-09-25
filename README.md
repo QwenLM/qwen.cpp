@@ -34,7 +34,7 @@ If you forgot the `--recursive` flag when cloning the repository, run the follow
 git submodule update --init --recursive
 ```
 
-Download the qwen.tiktoken file from [Hugging Face](https://huggingface.co/Qwen/Qwen-7B-Chat/blob/main/qwen.tiktoken).
+Download the qwen.tiktoken file from [Hugging Face](https://huggingface.co/Qwen/Qwen-7B-Chat/blob/main/qwen.tiktoken) or [modelscope](https://modelscope.cn/models/qwen/Qwen-7B-Chat/files).
 
 **Quantize Model**
 
