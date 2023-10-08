@@ -64,7 +64,7 @@ static auto parse_args(const std::vector<std::string> &argv) -> Args {
       args.tiktoken_path = argv[++i];
     } else if (arg == "--mode") {
       args.mode = to_inference_mode(argv[++i]);
-    } else if (arg == "-p" || arg == "--propmt") {
+    } else if (arg == "-p" || arg == "--prompt") {
       args.prompt = argv[++i];
     } else if (arg == "-i" || arg == "--interactive") {
       args.interactive = true;
