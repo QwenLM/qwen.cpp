@@ -5,3 +5,7 @@
 	path = third_party/pybind11
 	url = https://github.com/pybind/pybind11.git
 	branch = stable
+[submodule "third_party/re2"]
+	path = third_party/re2
+	url = https://github.com/google/re2.git
+	branch = main
