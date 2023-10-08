@@ -317,7 +317,7 @@ QwenAttention::QwenAttention(ModelContext *ctx, int hidden_size, int num_attenti
     v_cache(ggml_new_tensor_3d(ctx->ctx_kv.get(), GGML_TYPE_F16, max_length, hidden_size / num_attention_heads,
                                num_kv_heads)) {}
 
-auto QwenAttention::forward(ModelContext *ctx, ggml_tensor *hidden_states, int n_past) const -> ggml_tensor * {
+auto QwenAttention::forward(ModelContext *ctx, ggml_tensor *hidden_states, ggml_tensor *KQ_pos) const -> ggml_tensor * {
   ggml_context *gctx = ctx->ctx_b.get();
 
   const int hidden_size = hidden_states->ne[0];
@@ -325,19 +325,20 @@ auto QwenAttention::forward(ModelContext *ctx, ggml_tensor *hidden_states, int n
   const int head_size = hidden_size / num_attention_heads;
   const int rope_dim = head_size;
   const int mqa_scale = num_attention_heads / num_kv_heads;
+  const int n_past = static_cast<int *>(KQ_pos->data)[0];
 
   ggml_tensor *qkv = c_attn.forward(ctx, hidden_states); // [qlen, hidden + 2 * kv_hidden]
   ggml_tensor *query_layer =
     ggml_view_3d(gctx, qkv, head_size, num_attention_heads, qlen, head_size * ggml_element_size(qkv), qkv->nb[1],
                  0); // [qlen, heads, head_size]
-  query_layer = ggml_rope_inplace(gctx, query_layer, n_past, rope_dim, 2, 0);
+  query_layer = ggml_rope_inplace(gctx, query_layer, KQ_pos, rope_dim, 2, 0);
   query_layer = ggml_cont(gctx, ggml_permute(gctx, query_layer, 0, 2, 1, 3)); // [heads, qlen, head_size]
   query_layer = ggml_reshape_3d(gctx, query_layer, head_size, mqa_scale * qlen, num_kv_heads); // [kv_heads, mqa_scale * qlen, head_size]
 
   ggml_tensor *key_layer =
     ggml_view_3d(gctx, qkv, head_size, num_kv_heads, qlen, head_size * ggml_element_size(qkv), qkv->nb[1],
                  hidden_size * ggml_element_size(qkv)); // [qlen, kv_heads, head_size]
-  key_layer = ggml_rope_inplace(gctx, key_layer, n_past, rope_dim, 2, 0);
+  key_layer = ggml_rope_inplace(gctx, key_layer, KQ_pos, rope_dim, 2, 0);
   key_layer = ggml_permute(gctx, key_layer, 0, 2, 1, 3); // [kv_heads, qlen, head_size]
 
   ggml_tensor *value_layer =
@@ -398,12 +399,12 @@ auto QwenMLP::forward(ModelContext *ctx, ggml_tensor *hidden_states) const -> gg
   return output;
 }
 
-auto QwenBlock::forward(ModelContext *ctx, ggml_tensor *hidden_states, int n_past) const -> ggml_tensor * {
+auto QwenBlock::forward(ModelContext *ctx, ggml_tensor *hidden_states, ggml_tensor *KQ_pos) const -> ggml_tensor * {
   ggml_context *gctx = ctx->ctx_b.get();
 
   ggml_tensor *residual = hidden_states;
   hidden_states = ln_1.forward(ctx, hidden_states, 1e-6f);
-  hidden_states = attn.forward(ctx, hidden_states, n_past);
+  hidden_states = attn.forward(ctx, hidden_states, KQ_pos);
   hidden_states = ggml_add_inplace(gctx, hidden_states, residual);
 
   residual = hidden_states;
@@ -423,12 +424,12 @@ QwenModel::QwenModel(ModelContext *ctx, const QwenConfig &config)
   }
 }
 
-auto QwenModel::forward(ModelContext *ctx, ggml_tensor *input_ids, int n_past) const -> ggml_tensor * {
+auto QwenModel::forward(ModelContext *ctx, ggml_tensor *input_ids, ggml_tensor *KQ_pos) const -> ggml_tensor * {
   ggml_context *gctx = ctx->ctx_b.get();
   ggml_tensor *hidden_states = wte.forward(ctx, input_ids);
   for (const auto &layer : layers) {
     ggml_set_scratch(gctx, ctx->scratch);
-    hidden_states = layer.forward(ctx, hidden_states, n_past);
+    hidden_states = layer.forward(ctx, hidden_states, KQ_pos);
   }
   ggml_scratch empty_scratch = {0, 0, nullptr};
   ggml_set_scratch(gctx, empty_scratch);
@@ -520,7 +521,13 @@ auto QwenForCausalLM::generate_next_token(
   ggml_tensor *curr_input_ids = ggml_new_tensor_1d(ctx_.ctx_b.get(), GGML_TYPE_I32, curr_input_ids_size);
   memcpy(curr_input_ids->data, input_ids.data() + n_past, ggml_nbytes(curr_input_ids));
 
-  ggml_tensor *lm_logits = forward(&ctx_, curr_input_ids, n_past, n_ctx);
+  ggml_tensor *KQ_pos = ggml_new_tensor_1d(ctx_.ctx_b.get(), GGML_TYPE_I32, curr_input_ids_size);
+  int * data = static_cast<int *>(KQ_pos->data);
+  for (int i = 0; i < curr_input_ids_size; ++i) {
+    data[i] = n_past + i;
+  }
+
+  ggml_tensor *lm_logits = forward(&ctx_, curr_input_ids, KQ_pos, n_ctx);
   lm_logits->backend = GGML_BACKEND_CPU;
 
   ggml_build_forward_expand(&ctx_.gf, lm_logits);
@@ -710,10 +717,10 @@ auto QwenForCausalLM::load(ModelLoader &loader) -> void {
 auto QwenForCausalLM::forward(
   ModelContext *ctx,
   ggml_tensor *input_ids,
-  int n_past,
+  ggml_tensor *KQ_pos,
   int n_ctx
 ) const -> ggml_tensor * {
-  ggml_tensor *transformer_outputs = transformer.forward(ctx, input_ids, n_past);
+  ggml_tensor *transformer_outputs = transformer.forward(ctx, input_ids, KQ_pos);
   // NOTE: only compute next_token_logits for the last token
   if (input_ids->ne[0] > 1) {
     transformer_outputs =
