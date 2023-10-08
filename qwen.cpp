@@ -292,17 +292,28 @@ auto QwenTokenizer::build_prompt(const std::vector<std::string> &history) const 
   return oss_prompt.str();
 }
 
-auto QwenTokenizer::encode(const std::string &text) -> std::vector<int> {
+auto QwenTokenizer::encode(const std::string &text, int max_length) const -> std::vector<int> {
   auto ids = tokenizer.encode(text);
+  if ((int)ids.size() > max_length) {
+    ids.erase(ids.begin(), ids.end() - max_length);
+  }
   return ids;
 }
 
-auto QwenTokenizer::decode(const std::vector<int> &ids) -> std::string {
+auto QwenTokenizer::decode(const std::vector<int> &ids) const -> std::string {
   std::vector<int> normal_ids(ids);
   normal_ids.erase(std::remove_if(normal_ids.begin(), normal_ids.end(), [this](int id) { return is_special_id(id); }),
                    normal_ids.end());
   auto text = tokenizer.decode(normal_ids);
   return text;
+}
+
+auto QwenTokenizer::encode_history(
+  const std::vector<std::string> &history, int max_length
+) const -> std::vector<int> {
+  std::string prompt = build_prompt(history);
+  std::vector<int> input_ids = encode(prompt, max_length);
+  return input_ids;
 }
 
 auto QwenTokenizer::is_special_id(int id) const -> bool {
@@ -753,11 +764,21 @@ Pipeline::Pipeline(const std::string &path, const std::string &tiktoken_path) {
 }
 
 auto Pipeline::generate(
+  const std::vector<int> &input_ids,
+  const GenerationConfig &gen_config,
+  BaseStreamer *streamer
+) const -> std::vector<int> {
+  std::vector<int> output_ids = model->generate(input_ids, gen_config, streamer);
+  std::vector<int> new_output_ids(output_ids.begin() + input_ids.size(), output_ids.end());
+  return new_output_ids;
+}
+
+auto Pipeline::generate(
   const std::string &prompt,
   const GenerationConfig &gen_config,
   BaseStreamer *streamer
 ) const -> std::string {
-  std::vector<int> input_ids = tokenizer->encode(prompt);
+  std::vector<int> input_ids = tokenizer->encode(prompt, gen_config.max_context_length);
   std::vector<int> output_ids = model->generate(input_ids, gen_config, streamer);
 
   std::vector<int> new_output_ids(output_ids.begin() + input_ids.size(), output_ids.end());
@@ -767,8 +788,10 @@ auto Pipeline::generate(
 
 auto Pipeline::chat(const std::vector<std::string> &history, const GenerationConfig &gen_config,
                     BaseStreamer *streamer) const -> std::string {
-  std::string prompt = tokenizer->build_prompt(history);
-  return generate(prompt, gen_config, streamer);
+  std::vector<int> input_ids = tokenizer->encode_history(history, gen_config.max_context_length);
+  std::vector<int> new_output_ids = generate(input_ids, gen_config, streamer);
+  std::string output = tokenizer->decode(new_output_ids);
+  return output;
 }
 
 } // namespace qwen
