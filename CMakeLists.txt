@@ -13,11 +13,10 @@ if (NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif ()
 
-#find_package(re2 REQUIRED)
-
 # third-party libraries
 set(ABSL_ENABLE_INSTALL ON)
-add_subdirectory(third_party/abseil)
+set(ABSL_PROPAGATE_CXX_STD ON)
+add_subdirectory(third_party/abseil-cpp)
 
 add_subdirectory(third_party/re2)
 
