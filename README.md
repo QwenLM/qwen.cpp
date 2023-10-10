@@ -19,6 +19,11 @@ Support Matrix:
 
 **Preparation**
 
+Make sure you install the [re2](https://github.com/google/re2), on MacOS:
+```sh
+brew install re2
+```
+
 Clone the qwen.cpp repository into your local machine:
 ```sh
 git clone --recursive https://github.com/QwenLM/qwen.cpp && cd qwen.cpp
