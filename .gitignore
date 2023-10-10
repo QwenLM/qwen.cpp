@@ -1,6 +1,8 @@
 # ide
 .vscode/
 .vs/
+.idea
+cmake-build-debug
 
 # macOS
 .DS_Store
