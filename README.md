@@ -79,7 +79,10 @@ The Python binding provides high-level `chat` and `stream_chat` interface simila
 
 **Installation**
 
-Install from PyPI (recommended): WIP.
+Install from PyPI (recommended): will trigger compilation on your platform.
+```sh
+pip install -U qwen-cpp
+```
 
 You may also install from source.
 ```sh

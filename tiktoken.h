@@ -164,10 +164,9 @@ class tiktoken {
 		}
 
 	private:
-		template <typename T>
 		auto split_with_allowed_special_token(
 			re2::StringPiece &input,
-			const T &allowed_special
+			const ankerl::unordered_dense::map<std::string, int> &allowed_special
 		) const -> std::pair<std::optional<std::string>, re2::StringPiece> {
 			if (special_regex_ == nullptr) return { std::nullopt, input };
 
@@ -206,7 +205,7 @@ class tiktoken {
 		auto _encode_native(
 			const std::string &text,
 			const ankerl::unordered_dense::map<std::string, int> &allowed_special
-		) const -> const std::pair<std::vector<int>, int> {
+		) const -> std::pair<std::vector<int>, int> {
 			std::vector<int> ret;
 			int last_piece_token_len = 0;
 			re2::StringPiece input(text);

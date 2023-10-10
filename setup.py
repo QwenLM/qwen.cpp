@@ -114,7 +114,7 @@ class CMakeBuild(build_ext):
 HERE = Path(__file__).resolve().parent
 
 setup(
-    version="0.1",
+    version="0.1.2",
     author="Shijie Wang",
     packages=find_packages(),
     ext_modules=[CMakeExtension("qwen_cpp._C")],

@@ -33,3 +33,4 @@ dynamic = ["version"]
 [project.urls]
 Homepage = "https://github.com/QwenLM/qwen.cpp"
 Repository = "https://github.com/QwenLM/qwen.cpp.git"
+BugTracker = "https://github.com/QwenLM/qwen.cpp/issues"

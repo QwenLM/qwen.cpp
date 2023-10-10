@@ -1,0 +1,21 @@
+global-include CMakeLists.txt *.cmake README.md LICENSE
+include *.cpp *.h
+
+# absl
+graft third_party/abseil-cpp/absl
+graft third_party/abseil-cpp/CMake
+include third_party/abseil-cpp/*
+
+# re2
+graft third_party/re2/re2
+graft third_party/re2/util
+include third_party/re2/*
+
+# ggml
+graft third_party/ggml/include
+graft third_party/ggml/src
+include third_party/ggml/*
+
+# pybind11
+graft third_party/pybind11/include
+graft third_party/pybind11/tools
