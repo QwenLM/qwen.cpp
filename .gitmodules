@@ -9,3 +9,6 @@
 	path = third_party/re2
 	url = https://github.com/google/re2.git
 	branch = main
+[submodule "third_party/abseil"]
+	path = third_party/abseil
+	url = https://github.com/abseil/abseil-cpp.git
