@@ -143,15 +143,15 @@ class tiktoken {
 			}
 		}
 
-    auto encode_ordinary(const std::string &text) -> std::vector<int> {
+    auto encode_ordinary(const std::string &text) const -> std::vector<int> {
       return _encode_ordinary_native(text);
     }
 
-		auto encode(const std::string &text) -> std::vector<int> {
+		auto encode(const std::string &text) const -> std::vector<int> {
 			return _encode_native(text, special_tokens_encoder).first;
     }
 
-    auto encode_single_piece(const std::string &text) -> std::vector<int> {
+    auto encode_single_piece(const std::string &text) const -> std::vector<int> {
       auto iter = encoder_.find(text);
       if (iter != encoder_.end()) {
         return {iter->second};
@@ -159,7 +159,7 @@ class tiktoken {
       return byte_pair_encode(text, encoder_);
     }
 
-		auto decode(const std::vector<int> &tokens) -> std::string {
+		auto decode(const std::vector<int> &tokens) const -> std::string {
 			return _decode_native(tokens);
 		}
 
@@ -168,7 +168,7 @@ class tiktoken {
 		auto split_with_allowed_special_token(
 			re2::StringPiece &input,
 			const T &allowed_special
-		) -> std::pair<std::optional<std::string>, re2::StringPiece> {
+		) const -> std::pair<std::optional<std::string>, re2::StringPiece> {
 			if (special_regex_ == nullptr) return { std::nullopt, input };
 
 			auto start = input.begin();
@@ -186,7 +186,7 @@ class tiktoken {
 			return { std::nullopt, input };
 		}
 
-    auto _encode_ordinary_native(const std::string &text) -> std::vector<int> {
+    auto _encode_ordinary_native(const std::string &text) const -> std::vector<int> {
       std::vector<int> ret;
       re2::StringPiece input(text);
 
@@ -206,7 +206,7 @@ class tiktoken {
 		auto _encode_native(
 			const std::string &text,
 			const ankerl::unordered_dense::map<std::string, int> &allowed_special
-		) -> std::pair<std::vector<int>, int> {
+		) const -> const std::pair<std::vector<int>, int> {
 			std::vector<int> ret;
 			int last_piece_token_len = 0;
 			re2::StringPiece input(text);
@@ -238,7 +238,7 @@ class tiktoken {
 			return { ret, last_piece_token_len };
 		}
 
-		auto _decode_native(const std::vector<int> &tokens) -> std::string {
+		auto _decode_native(const std::vector<int> &tokens) const -> std::string {
 			std::string ret;
 			ret.reserve(tokens.size() * 2);
 			for (auto token : tokens) {

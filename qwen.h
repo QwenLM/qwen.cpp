@@ -268,9 +268,11 @@ class QwenTokenizer {
 
     QwenTokenizer(const std::string & tiktoken_path, const QwenConfig &config);
 
-    auto encode(const std::string &text) -> std::vector<int>;
+    auto encode(const std::string &text, int max_length) const -> std::vector<int>;
 
-    auto decode(const std::vector<int> &ids) -> std::string;
+    auto decode(const std::vector<int> &ids) const -> std::string;
+
+    auto encode_history(const std::vector<std::string> &history, int max_length) const -> std::vector<int>;
 
     auto build_prompt(const std::vector<std::string> &history) const -> std::string;
 
@@ -390,6 +392,9 @@ class QwenForCausalLM {
 class Pipeline {
   public:
     Pipeline(const std::string &path, const std::string &tiktoken_path);
+
+    auto generate(const std::vector<int> &input_ids, const GenerationConfig &gen_config,
+                  BaseStreamer *streamer = nullptr) const -> std::vector<int>;
 
     auto generate(const std::string &prompt, const GenerationConfig &gen_config,
                   BaseStreamer *streamer = nullptr) const -> std::string;
