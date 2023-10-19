@@ -20,9 +20,15 @@ add_subdirectory(third_party/abseil-cpp)
 
 add_subdirectory(third_party/re2)
 
-add_compile_definitions(GGML_CUDA_MMV_Y=2)  # for large vocab
+add_compile_definitions(GGML_CUDA_MMV_Y=3)  # for large vocab
 include_directories(third_party/ggml/include/ggml third_party/ggml/src)
 add_subdirectory(third_party/ggml)
+
+if (GGML_CUBLAS)
+  add_compile_definitions(GGML_USE_CUBLAS)
+  set(CUDA_ARCHITECTURES "52;61;70;75;80;86" CACHE STRING "qwen: cuda architectures to compile")
+  set_property(TARGET ggml PROPERTY CUDA_ARCHITECTURES ${CUDA_ARCHITECTURES})
+endif ()
 
 file(GLOB CPP_SOURCES
   ${PROJECT_SOURCE_DIR}/*.h

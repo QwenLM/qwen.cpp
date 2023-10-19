@@ -8,6 +8,10 @@
 #include <unordered_map>
 #include <vector>
 
+#ifdef GGML_USE_CUBLAS
+#include <ggml-cuda.h>
+#endif
+
 namespace qwen {
 
 class QwenTokenizer;
@@ -32,6 +36,8 @@ class LogMessageFatal {
 #define QWEN_CHECK(cond) \
     if (!(cond)) \
     QWEN_THROW << "check failed (" #cond ") "
+
+ggml_tensor *tensor_assign_buffers(ggml_tensor *tensor);
 
 auto tensor_to_device(ggml_tensor *tensor) -> ggml_tensor *;
 
@@ -289,7 +295,7 @@ class QwenAttention {
     QwenAttention() : num_attention_heads(0), num_kv_heads(0) {}
     QwenAttention(ModelContext *ctx, int hidden_size, int num_attention_heads, int num_kv_heads, int max_length);
 
-    auto forward(ModelContext *ctx, ggml_tensor *hidden_states, ggml_tensor *KQ_pos) const -> ggml_tensor *;
+    auto forward(ModelContext *ctx, ggml_tensor *hidden_states, ggml_tensor *KQ_pos, int n_ctx) const -> ggml_tensor *;
 
     int num_attention_heads;
     int num_kv_heads;
@@ -323,7 +329,7 @@ class QwenBlock {
         ln_2(ctx, hidden_size, false),
         mlp(ctx, hidden_size, intermediate_size) {}
 
-    auto forward(ModelContext *ctx, ggml_tensor *hidden_states, ggml_tensor *KQ_pos) const -> ggml_tensor *;
+    auto forward(ModelContext *ctx, ggml_tensor *hidden_states, ggml_tensor *KQ_pos, int n_ctx) const -> ggml_tensor *;
 
     RMSNorm ln_1;
     QwenAttention attn;
@@ -336,7 +342,7 @@ class QwenModel {
     QwenModel() = default;
     QwenModel(ModelContext *ctx, const QwenConfig &config);
 
-    auto forward(ModelContext *ctx, ggml_tensor *input_ids, ggml_tensor *KQ_pos) const -> ggml_tensor *;
+    auto forward(ModelContext *ctx, ggml_tensor *input_ids, ggml_tensor *KQ_pos, int n_ctx) const -> ggml_tensor *;
 
     Embedding wte;
     std::vector<QwenBlock> layers;
