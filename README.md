@@ -73,6 +73,22 @@ In interactive mode, your chat history will serve as the context for the next-ro
 
 Run `./build/bin/main -h` to explore more options!
 
+## Using BLAS
+
+**OpenBLAS**
+
+OpenBLAS provides acceleration on CPU. Add the CMake flag `-DGGML_OPENBLAS=ON` to enable it.
+```sh
+cmake -B build -DGGML_OPENBLAS=ON && cmake --build build -j
+```
+
+**cuBLAS**
+
+cuBLAS uses NVIDIA GPU to accelerate BLAS. Add the CMake flag `-DGGML_CUBLAS=ON` to enable it.
+```sh
+cmake -B build -DGGML_CUBLAS=ON && cmake --build build -j
+```
+
 ## Python Binding
 
 The Python binding provides high-level `chat` and `stream_chat` interface similar to the original Hugging Face Qwen-7B.
