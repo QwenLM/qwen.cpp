@@ -24,6 +24,11 @@ add_compile_definitions(GGML_CUDA_MMV_Y=3)  # for large vocab
 include_directories(third_party/ggml/include/ggml third_party/ggml/src)
 add_subdirectory(third_party/ggml)
 
+if(APPLE AND GGML_METAL)
+  add_compile_definitions(GGML_USE_METAL)
+  configure_file(third_party/ggml/src/ggml-metal.metal ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/ggml-metal.metal COPYONLY)
+endif()
+
 if (GGML_CUBLAS)
   add_compile_definitions(GGML_USE_CUBLAS)
   set(CUDA_ARCHITECTURES "52;61;70;75;80;86" CACHE STRING "qwen: cuda architectures to compile")

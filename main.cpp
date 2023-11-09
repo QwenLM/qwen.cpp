@@ -112,7 +112,7 @@ static auto get_utf8_line(std::string &line) -> bool {
 static auto chat(Args &args) -> void {
   ggml_time_init();
   int64_t start_load_us = ggml_time_us();
-  qwen::Pipeline pipeline(args.model_path, args.tiktoken_path);
+  qwen::Pipeline pipeline(args.model_path, args.tiktoken_path, args.max_length);
   int64_t end_load_us = ggml_time_us();
 
   std::string model_name = "qwen";
@@ -138,6 +138,7 @@ static auto chat(Args &args) -> void {
               << "F16C = " << ggml_cpu_has_f16c() << " | "
               << "FP16_VA = " << ggml_cpu_has_fp16_va() << " | "
               << "WASM_SIMD = " << ggml_cpu_has_wasm_simd() << " | "
+              << "METAL = " << ggml_cpu_has_metal() << " | "
               << "BLAS = " << ggml_cpu_has_blas() << " | "
               << "SSE3 = " << ggml_cpu_has_sse3() << " | "
               << "VSX = " << ggml_cpu_has_vsx() << " |\n";

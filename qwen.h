@@ -12,6 +12,10 @@
 #include <ggml-cuda.h>
 #endif
 
+#ifdef GGML_USE_METAL
+#include <ggml-metal.h>
+#endif
+
 namespace qwen {
 
 class QwenTokenizer;
@@ -58,6 +62,18 @@ static inline auto make_unique_ggml_context(
   return unique_ggml_context_t(ggml_init({mem_size, mem_buffer, no_alloc}));
 }
 
+#ifdef GGML_USE_METAL
+struct ggml_metal_context_deleter_t {
+    void operator()(ggml_metal_context *ctx) const noexcept { ggml_metal_free(ctx); }
+};
+
+using unique_ggml_metal_context_t = std::unique_ptr<ggml_metal_context, ggml_metal_context_deleter_t>;
+
+static inline auto make_unique_ggml_metal_context(int n_cb) -> unique_ggml_metal_context_t {
+    return unique_ggml_metal_context_t(ggml_metal_init(n_cb));
+}
+#endif
+
 struct uninitialized_char {
   char m;
   uninitialized_char() {}
@@ -70,6 +86,9 @@ struct ModelContext {
   unique_ggml_context_t ctx_w;  // weight
   unique_ggml_context_t ctx_kv; // kv cache
   unique_ggml_context_t ctx_b;  // buffer
+#ifdef GGML_USE_METAL
+  unique_ggml_metal_context_t ctx_metal;
+#endif
   ggml_cgraph gf;
   ggml_scratch scratch;
   std::vector<uninitialized_char> compute_buffer; // BLAS buffer
@@ -397,7 +416,7 @@ class QwenForCausalLM {
 
 class Pipeline {
   public:
-    Pipeline(const std::string &path, const std::string &tiktoken_path);
+    Pipeline(const std::string &path, const std::string &tiktoken_path, const int max_length);
 
     auto generate(const std::vector<int> &input_ids, const GenerationConfig &gen_config,
                   BaseStreamer *streamer = nullptr) const -> std::vector<int>;

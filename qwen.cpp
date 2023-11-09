@@ -20,6 +20,7 @@
 #endif
 #endif
 
+
 namespace qwen {
 
 ggml_tensor *tensor_assign_buffers(ggml_tensor *tensor) {
@@ -61,7 +62,26 @@ auto ggml_graph_compute_helper(std::vector<uninitialized_char> &buf, ggml_cgraph
   ggml_graph_compute(graph, &plan);
 }
 
-auto ModelContext::init_device_context() -> void {}
+auto ModelContext::init_device_context() -> void {
+#ifdef GGML_USE_METAL
+    ctx_metal = make_unique_ggml_metal_context(1);
+
+    const size_t max_size = ggml_get_max_tensor_size(ctx_w.get());
+
+    void *weight_data = weight_buffer.empty() ? ggml_get_mem_buffer(ctx_w.get()) : (void *)weight_buffer.data();
+    size_t weight_size = weight_buffer.empty() ? ggml_get_mem_size(ctx_w.get()) : weight_buffer.size();
+    QWEN_CHECK(ggml_metal_add_buffer(ctx_metal.get(), "weights", weight_data, weight_size, max_size));
+
+    QWEN_CHECK(ggml_metal_add_buffer(ctx_metal.get(), "kv", ggml_get_mem_buffer(ctx_kv.get()),
+                                        ggml_get_mem_size(ctx_kv.get()), 0));
+
+    void *compute_data = ctx_b ? ggml_get_mem_buffer(ctx_b.get()) : compute_buffer.data();
+    size_t compute_size = ctx_b ? ggml_get_mem_size(ctx_b.get()) : compute_buffer.size();
+    QWEN_CHECK(ggml_metal_add_buffer(ctx_metal.get(), "compute", compute_data, compute_size, 0));
+
+    QWEN_CHECK(ggml_metal_add_buffer(ctx_metal.get(), "scratch", scratch.data, scratch.size, 0));
+#endif
+}
 
 // ===== streamer =====
 
@@ -389,6 +409,7 @@ auto QwenAttention::forward(ModelContext *ctx, ggml_tensor *hidden_states, ggml_
     ggml_view_3d(gctx, k_cache, head_size, qlen, num_kv_heads, k_cache->nb[1], k_cache->nb[2],
                  n_past * head_size * ggml_element_size(k_cache))); // [kv_heads, qlen, head_size]
   ggml_build_forward_expand(&ctx->gf, ggml_cpy(gctx, key_layer, k_cache_view));
+
   ggml_tensor *v_cache_view = tensor_assign_buffers(
     ggml_view_3d(gctx, v_cache, qlen, head_size, num_kv_heads, v_cache->nb[1], v_cache->nb[2],
                  n_past * ggml_element_size(v_cache))); // [kv_heads, head_size, qlen]
@@ -482,7 +503,7 @@ auto get_num_physical_cores() -> int {
 }
 
 auto get_default_num_threads() -> int {
-#ifdef GGML_USE_CUBLAS
+#if defined(GGML_USE_CUBLAS) || defined(GGML_USE_METAL)
     return 1;
 #else
   return std::min(get_num_physical_cores(), 16);
@@ -491,8 +512,9 @@ auto get_default_num_threads() -> int {
 
 QwenForCausalLM::QwenForCausalLM(const QwenConfig &config)
   : config(config) {
-  ctx_.compute_buffer.resize(MEM_SIZE);
-  ctx_.scratch_buffer.resize(SCRATCH_SIZE);
+  const float scale = config.max_length / 2048.0;
+  ctx_.compute_buffer.resize(static_cast<size_t>(MEM_SIZE * scale));
+  ctx_.scratch_buffer.resize(static_cast<float>(SCRATCH_SIZE * scale));
   ctx_.scratch = {0, ctx_.scratch_buffer.size(), ctx_.scratch_buffer.data()};
 #ifdef GGML_USE_CUBLAS
   ggml_cuda_set_scratch_size(SCRATCH_SIZE);
@@ -583,7 +605,13 @@ auto QwenForCausalLM::generate_next_token(
   }
 
   ggml_build_forward_expand(&ctx_.gf, lm_logits);
+
+#ifdef GGML_USE_METAL
+  ggml_metal_graph_compute(ctx_.ctx_metal.get(), &ctx_.gf);
+#else
   ggml_graph_compute_helper(ctx_.work_buffer, &ctx_.gf, n_threads);
+#endif
+
 
   int vocab_size = lm_logits->ne[0];
   float *next_token_logits = (float *)lm_logits->data;
@@ -763,6 +791,7 @@ auto QwenForCausalLM::load(ModelLoader &loader) -> void {
   }
 
   ctx_.weight_buffer = std::string_view(loader.data, loader.size);
+
   ctx_.init_device_context();
 }
 
@@ -785,7 +814,7 @@ auto QwenForCausalLM::forward(
 
 // ===== pipeline =====
 
-Pipeline::Pipeline(const std::string &path, const std::string &tiktoken_path) {
+Pipeline::Pipeline(const std::string &path, const std::string &tiktoken_path, const int max_length) {
   mapped_file = std::make_unique<MappedFile>(path);
   ModelLoader loader(std::string_view((char *)mapped_file->data, mapped_file->size));
 
@@ -795,6 +824,8 @@ Pipeline::Pipeline(const std::string &path, const std::string &tiktoken_path) {
 
   // load config
   QwenConfig config = loader.read_basic<QwenConfig>();
+
+  config.max_length = max_length;
 
   // load model
   model = std::make_unique<QwenForCausalLM>(config);
