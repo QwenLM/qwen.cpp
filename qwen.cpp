@@ -517,7 +517,7 @@ QwenForCausalLM::QwenForCausalLM(const QwenConfig &config)
   ctx_.scratch_buffer.resize(static_cast<size_t>(SCRATCH_SIZE * scale));
   ctx_.scratch = {0, ctx_.scratch_buffer.size(), ctx_.scratch_buffer.data()};
 #ifdef GGML_USE_CUBLAS
-  ggml_cuda_set_scratch_size(SCRATCH_SIZE);
+  ggml_cuda_set_scratch_size(static_cast<size_t>(SCRATCH_SIZE * scale));
 #endif
   constexpr size_t tensor_ovhd = GGML_TENSOR_SIZE + GGML_OBJECT_SIZE;
   const size_t ctx_w_size = (3 + config.num_hidden_layers * 8) * tensor_ovhd;
