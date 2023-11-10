@@ -20,7 +20,6 @@
 #endif
 #endif
 
-
 namespace qwen {
 
 ggml_tensor *tensor_assign_buffers(ggml_tensor *tensor) {
