@@ -409,7 +409,6 @@ auto QwenAttention::forward(ModelContext *ctx, ggml_tensor *hidden_states, ggml_
     ggml_view_3d(gctx, k_cache, head_size, qlen, num_kv_heads, k_cache->nb[1], k_cache->nb[2],
                  n_past * head_size * ggml_element_size(k_cache))); // [kv_heads, qlen, head_size]
   ggml_build_forward_expand(&ctx->gf, ggml_cpy(gctx, key_layer, k_cache_view));
-
   ggml_tensor *v_cache_view = tensor_assign_buffers(
     ggml_view_3d(gctx, v_cache, qlen, head_size, num_kv_heads, v_cache->nb[1], v_cache->nb[2],
                  n_past * ggml_element_size(v_cache))); // [kv_heads, head_size, qlen]
@@ -791,7 +790,6 @@ auto QwenForCausalLM::load(ModelLoader &loader) -> void {
   }
 
   ctx_.weight_buffer = std::string_view(loader.data, loader.size);
-
   ctx_.init_device_context();
 }
 
@@ -825,6 +823,7 @@ Pipeline::Pipeline(const std::string &path, const std::string &tiktoken_path, co
   // load config
   QwenConfig config = loader.read_basic<QwenConfig>();
 
+  // set max length from args
   config.max_length = max_length;
 
   // load model
