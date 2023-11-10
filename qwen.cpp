@@ -514,7 +514,7 @@ QwenForCausalLM::QwenForCausalLM(const QwenConfig &config)
   : config(config) {
   const float scale = config.max_length / 2048.0;
   ctx_.compute_buffer.resize(static_cast<size_t>(MEM_SIZE * scale));
-  ctx_.scratch_buffer.resize(static_cast<float>(SCRATCH_SIZE * scale));
+  ctx_.scratch_buffer.resize(static_cast<size_t>(SCRATCH_SIZE * scale));
   ctx_.scratch = {0, ctx_.scratch_buffer.size(), ctx_.scratch_buffer.data()};
 #ifdef GGML_USE_CUBLAS
   ggml_cuda_set_scratch_size(SCRATCH_SIZE);
