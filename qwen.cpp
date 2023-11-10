@@ -512,7 +512,7 @@ auto get_default_num_threads() -> int {
 
 QwenForCausalLM::QwenForCausalLM(const QwenConfig &config)
   : config(config) {
-  const float scale = config.max_length / 2048.0;
+  const float scale = config.max_length / 2048.0; // default (MEM_SIZE and SCRATCH_SIZE) setting is for 2k context, so depend on max_length to scale it
   ctx_.compute_buffer.resize(static_cast<size_t>(MEM_SIZE * scale));
   ctx_.scratch_buffer.resize(static_cast<size_t>(SCRATCH_SIZE * scale));
   ctx_.scratch = {0, ctx_.scratch_buffer.size(), ctx_.scratch_buffer.data()};
