@@ -11,7 +11,7 @@ Highlights:
 * [x] Python binding.
 
 Support Matrix:
-* Hardwares: x86/arm CPU, NVIDIA GPU
+* Hardwares: x86/arm CPU, NVIDIA GPU, Apple Silicon GPU
 * Platforms: Linux, MacOS
 * Models: [Qwen-LM](https://github.com/QwenLM/Qwen)
 
@@ -90,6 +90,7 @@ cmake -B build -DGGML_CUBLAS=ON && cmake --build build -j
 ```
 
 ## Using Metal
+
 Metal uses Apple Silicon GPU to compute graph. Add the CMake flag `-DGGML_METAL=ON` to enable it.
 ```sh
 cmake -B build -DGGML_METAL=ON && cmake --build build -j
