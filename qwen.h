@@ -416,7 +416,7 @@ class QwenForCausalLM {
 
 class Pipeline {
   public:
-    Pipeline(const std::string &path, const std::string &tiktoken_path, const int max_length);
+    Pipeline(const std::string &path, const std::string &tiktoken_path, const int max_length = 0);
 
     auto generate(const std::vector<int> &input_ids, const GenerationConfig &gen_config,
                   BaseStreamer *streamer = nullptr) const -> std::vector<int>;

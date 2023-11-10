@@ -823,7 +823,9 @@ Pipeline::Pipeline(const std::string &path, const std::string &tiktoken_path, co
   QwenConfig config = loader.read_basic<QwenConfig>();
 
   // set max length from args
-  config.max_length = max_length;
+  if (max_length > 0 && max_length < config.max_length) {
+    config.max_length = max_length;
+  }
 
   // load model
   model = std::make_unique<QwenForCausalLM>(config);
