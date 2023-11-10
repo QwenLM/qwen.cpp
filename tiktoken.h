@@ -136,7 +136,7 @@ class tiktoken {
 			for (const auto &[k, v] : encoder_) {
 				decoder_.emplace(v, k);
 			}
-			assert(encoder_.size() != decoder_.size() && "Encoder and decoder must be of equal length; maybe you had duplicate token indices in your encoder?");
+			assert(encoder_.size() == decoder_.size() && "Encoder and decoder must be of equal length; maybe you had duplicate token indices in your encoder?");
 
 			for (const auto &[k, v] : special_tokens_encoder) {
 				special_tokens_decoder.emplace(v, k);
