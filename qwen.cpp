@@ -61,7 +61,21 @@ auto ggml_graph_compute_helper(std::vector<uninitialized_char> &buf, ggml_cgraph
   ggml_graph_compute(graph, &plan);
 }
 
-auto ModelContext::init_device_context() -> void {}
+auto ModelContext::init_device_context() -> void {
+#ifdef GGML_USE_METAL
+  ctx_metal = make_unique_ggml_metal_context(1);
+  const size_t max_size = ggml_get_max_tensor_size(ctx_w.get());
+  void *weight_data = weight_buffer.empty() ? ggml_get_mem_buffer(ctx_w.get()) : (void *)weight_buffer.data();
+  size_t weight_size = weight_buffer.empty() ? ggml_get_mem_size(ctx_w.get()) : weight_buffer.size();
+  QWEN_CHECK(ggml_metal_add_buffer(ctx_metal.get(), "weights", weight_data, weight_size, max_size));
+  QWEN_CHECK(ggml_metal_add_buffer(ctx_metal.get(), "kv", ggml_get_mem_buffer(ctx_kv.get()),
+             ggml_get_mem_size(ctx_kv.get()), 0));
+  void *compute_data = ctx_b ? ggml_get_mem_buffer(ctx_b.get()) : compute_buffer.data();
+  size_t compute_size = ctx_b ? ggml_get_mem_size(ctx_b.get()) : compute_buffer.size();
+  QWEN_CHECK(ggml_metal_add_buffer(ctx_metal.get(), "compute", compute_data, compute_size, 0));
+  QWEN_CHECK(ggml_metal_add_buffer(ctx_metal.get(), "scratch", scratch.data, scratch.size, 0));
+#endif
+}
 
 // ===== streamer =====
 
@@ -482,7 +496,7 @@ auto get_num_physical_cores() -> int {
 }
 
 auto get_default_num_threads() -> int {
-#ifdef GGML_USE_CUBLAS
+#if defined(GGML_USE_CUBLAS) || defined(GGML_USE_METAL)
     return 1;
 #else
   return std::min(get_num_physical_cores(), 16);
@@ -583,7 +597,11 @@ auto QwenForCausalLM::generate_next_token(
   }
 
   ggml_build_forward_expand(&ctx_.gf, lm_logits);
+#ifdef GGML_USE_METAL
+  ggml_metal_graph_compute(ctx_.ctx_metal.get(), &ctx_.gf);
+#else
   ggml_graph_compute_helper(ctx_.work_buffer, &ctx_.gf, n_threads);
+#endif
 
   int vocab_size = lm_logits->ne[0];
   float *next_token_logits = (float *)lm_logits->data;

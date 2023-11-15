@@ -30,6 +30,11 @@ if (GGML_CUBLAS)
   set_property(TARGET ggml PROPERTY CUDA_ARCHITECTURES ${CUDA_ARCHITECTURES})
 endif ()
 
+if (GGML_METAL)
+  add_compile_definitions(GGML_USE_METAL)
+  configure_file(third_party/ggml/src/ggml-metal.metal ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/ggml-metal.metal COPYONLY)
+endif ()
+
 file(GLOB CPP_SOURCES
   ${PROJECT_SOURCE_DIR}/*.h
   ${PROJECT_SOURCE_DIR}/*.cpp)

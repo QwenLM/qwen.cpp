@@ -89,6 +89,13 @@ cuBLAS uses NVIDIA GPU to accelerate BLAS. Add the CMake flag `-DGGML_CUBLAS=ON`
 cmake -B build -DGGML_CUBLAS=ON && cmake --build build -j
 ```
 
+**Metal**
+
+MPS (Metal Performance Shaders) allows computation to run on powerful Apple Silicon GPU. Add the CMake flag `-DGGML_METAL=ON` to enable it.
+```sh
+cmake -B build -DGGML_METAL=ON && cmake --build build -j
+```
+
 ## Python Binding
 
 The Python binding provides high-level `chat` and `stream_chat` interface similar to the original Hugging Face Qwen-7B.
