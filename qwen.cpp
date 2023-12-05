@@ -505,11 +505,12 @@ auto get_default_num_threads() -> int {
 
 QwenForCausalLM::QwenForCausalLM(const QwenConfig &config)
   : config(config) {
-  ctx_.compute_buffer.resize(MEM_SIZE);
-  ctx_.scratch_buffer.resize(SCRATCH_SIZE);
+  const float scale = config.max_length / 2048.0; // default (MEM_SIZE and SCRATCH_SIZE) setting is for 2k context, so depend on max_length to scale it
+  ctx_.compute_buffer.resize(static_cast<size_t>(MEM_SIZE * scale));
+  ctx_.scratch_buffer.resize(static_cast<size_t>(SCRATCH_SIZE * scale));
   ctx_.scratch = {0, ctx_.scratch_buffer.size(), ctx_.scratch_buffer.data()};
 #ifdef GGML_USE_CUBLAS
-  ggml_cuda_set_scratch_size(SCRATCH_SIZE);
+  ggml_cuda_set_scratch_size(static_cast<size_t>(SCRATCH_SIZE * scale));
 #endif
   constexpr size_t tensor_ovhd = GGML_TENSOR_SIZE + GGML_OBJECT_SIZE;
   const size_t ctx_w_size = (3 + config.num_hidden_layers * 8) * tensor_ovhd;
@@ -803,7 +804,7 @@ auto QwenForCausalLM::forward(
 
 // ===== pipeline =====
 
-Pipeline::Pipeline(const std::string &path, const std::string &tiktoken_path) {
+Pipeline::Pipeline(const std::string &path, const std::string &tiktoken_path, const int max_length) {
   mapped_file = std::make_unique<MappedFile>(path);
   ModelLoader loader(std::string_view((char *)mapped_file->data, mapped_file->size));
 
@@ -813,6 +814,11 @@ Pipeline::Pipeline(const std::string &path, const std::string &tiktoken_path) {
 
   // load config
   QwenConfig config = loader.read_basic<QwenConfig>();
+  
+  // modify max length from external setting
+  if (max_length > 0 && max_length < config.max_length) {
+    config.max_length = max_length;
+  }
 
   // load model
   model = std::make_unique<QwenForCausalLM>(config);

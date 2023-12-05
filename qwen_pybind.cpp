@@ -55,7 +55,7 @@ PYBIND11_MODULE(_C, m) {
     .def_readwrite("num_threads", &GenerationConfig::num_threads);
 
   py::class_<Pipeline>(m, "Pipeline")
-    .def(py::init<const std::string &, const std::string &>())
+    .def(py::init<const std::string &, const std::string &, const int>())
     .def_property_readonly("model", [](const Pipeline &self) { return self.model.get(); })
     .def_property_readonly("tokenizer", [](const Pipeline &self) { return self.tokenizer.get(); });
 }
