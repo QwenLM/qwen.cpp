@@ -2,6 +2,9 @@
 
 C++ implementation of [Qwen-LM](https://github.com/QwenLM/Qwen) for real-time chatting on your MacBook.
 
+## Updates
+- **`2023/12/05`** qwen was merged to [llama.cpp](https://github.com/ggerganov/llama.cpp/pull/4281) and supports gguf format.
+
 ## Features
 
 Highlights:
