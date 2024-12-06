@@ -1,3 +1,14 @@
+> [!IMPORTANT]
+>
+> **End of Active Maintenance for qwen.cpp**
+> 
+> Since December 2023, the core features of qwen.cpp have been integrated into llama.cpp. As of December 2024, qwen.cpp no longer offers the same level of functionality, efficiency, and device support as llama.cpp, including updates to newer Qwen models.
+>
+> We regret to announce that we will no longer actively maintain qwen.cpp. This means we will not be addressing issues, merging pull requests, or releasing updates. For ongoing development and support, we encourage you to explore [llama.cpp](https://github.com/ggerganov/llama.cpp), which continues to evolve with new features and improvements.
+>
+> Thank you for being part of our journey.
+
+
 # qwen.cpp
 
 C++ implementation of [Qwen-LM](https://github.com/QwenLM/Qwen) for real-time chatting on your MacBook.
